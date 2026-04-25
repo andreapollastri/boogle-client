@@ -1,0 +1,43 @@
+{
+    "name": "andreapollastri/boogle-client",
+    "description": "Exception reporting for Laravel applications — send errors to your Boogle instance.",
+    "keywords": [
+        "laravel",
+        "exception",
+        "error-tracking",
+        "boogle"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/http": "^10.0|^11.0|^12.0|^13.0",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Boogle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Boogle\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Boogle\\BoogleServiceProvider"
+            ],
+            "aliases": {
+                "Boogle": "Boogle\\Facade"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
