@@ -46,6 +46,20 @@ class Boogle
         }
     }
 
+    /**
+     * For Laravel 11+ bootstrap: pass the withExceptions() $exceptions value here. Never pass it to handle().
+     */
+    public function registerExceptionHandler(object $exceptions): void
+    {
+        if (! method_exists($exceptions, 'reportable')) {
+            return;
+        }
+
+        $exceptions->reportable(function (Throwable $e) {
+            $this->handle($e);
+        });
+    }
+
     private function shouldReport(Throwable $exception): bool
     {
         if (! $this->isEnabled()) {
@@ -99,24 +113,28 @@ class Boogle
             $feedbackFromCustom
         );
 
+        $exceptionBlock = array_merge([
+            'exception'      => get_class($exception),
+            'error'          => $exception->getMessage(),
+            'file'           => $exception->getFile(),
+            'line'           => $exception->getLine(),
+            'class'          => get_class($exception),
+            'fileType'       => $fileType,
+            'executor'       => $this->buildStackTrace($exception),
+            'storage'        => $this->getStorageInfo(),
+            'user'           => $this->getUser(),
+            'host'           => $request ? $request->getHost() : gethostname(),
+            'method'         => $request ? $request->getMethod() : null,
+            'fullUrl'        => $request ? $request->fullUrl() : null,
+            'user_feedback'  => $userFeedback,
+        ], $customRest);
+
         return [
-            'key'       => config('boogle.project_key'),
-            'token'     => config('boogle.key'),
-            'exception' => array_merge([
-                'exception'      => get_class($exception),
-                'error'          => $exception->getMessage(),
-                'file'           => $exception->getFile(),
-                'line'           => $exception->getLine(),
-                'class'          => get_class($exception),
-                'fileType'       => $fileType,
-                'executor'       => $this->buildStackTrace($exception),
-                'storage'        => $this->getStorageInfo(),
-                'user'           => $this->getUser(),
-                'host'           => $request ? $request->getHost() : gethostname(),
-                'method'         => $request ? $request->getMethod() : null,
-                'fullUrl'        => $request ? $request->fullUrl() : null,
-                'user_feedback'  => $userFeedback,
-            ], $customRest),
+            'key'             => config('boogle.project_key'),
+            'token'           => config('boogle.key'),
+            'user_feedback'   => $userFeedback,
+            'userFeedback'    => $userFeedback,
+            'exception'       => $exceptionBlock,
         ];
     }
 
@@ -438,7 +456,16 @@ class Boogle
     private function getRequest(): ?Request
     {
         try {
-            return app('request');
+            if (function_exists('request')) {
+                $r = request();
+                if ($r instanceof Request) {
+                    return $r;
+                }
+            }
+
+            $r = app('request');
+
+            return $r instanceof Request ? $r : null;
         } catch (\Exception) {
             return null;
         }
