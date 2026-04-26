@@ -12,6 +12,13 @@ class BoogleTestCommand extends Command
 
     public function handle(Boogle $boogle): void
     {
+        if (! $boogle->isEnabled()) {
+            $this->warn('Boogle is not configured: set BOOGLE_KEY and BOOGLE_PROJECT_KEY in your .env (and BOOGLE_SERVER if needed).');
+            $this->line('No request was sent.');
+
+            return;
+        }
+
         $this->info('Sending test exception to Boogle...');
 
         try {

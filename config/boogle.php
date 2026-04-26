@@ -72,4 +72,20 @@ return [
         'token',
         'secret',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Automatic user feedback context
+    |--------------------------------------------------------------------------
+    | When an error is reported, extra request/client/debug context is attached
+    | under the "user_feedback" key. You can pass client.screen etc. from JS
+    | via the third argument to Boogle::handle($e, 'php', ['client' => ...]).
+    */
+    'context' => [
+        'include_input'   => true,
+        'include_query'   => true,
+        'include_session' => false,
+        'include_headers' => false,
+        'cookie_values'   => false, // if true, send cookie name/value (blacklist applied). Otherwise only cookie_names.
+    ],
 ];
