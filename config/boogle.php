@@ -75,11 +75,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Automatic user feedback context
+    | Automatic user feedback + context (boogle.context = debug payload below)
     |--------------------------------------------------------------------------
-    | When an error is reported, extra request/client/debug context is attached
-    | under the "user_feedback" key. You can pass client.screen etc. from JS
-    | via the third argument to Boogle::handle($e, 'php', ['client' => ...]).
+    | user_feedback in JSON: kind=automatic, occurrence_id, captured_at, technical{…}.
+    | Manual text feedback from a user in the Boogle app is separate. Merge with
+    | Boogle::handle($e, "php", ["user_feedback" => …]). "context" key below
+    | fills technical.context when non-empty. Use "client" in handle() for e.g. screen.
     */
     'context' => [
         'include_input'   => true,

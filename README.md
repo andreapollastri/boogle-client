@@ -10,10 +10,11 @@ Lightweight, framework-native integration: configure credentials, call one line 
 
 - **Laravel-first** — auto-discovery service provider, facade alias `Boogle`, and Artisan helpers
 - **Rich exception context** — class, message, file, line, configurable stack depth, PHP/Laravel versions, DB driver, memory, and HTTP host/method/full URL when a request exists
-- **User feedback block** — IP, `User-Agent`, OS/browser (Client Hints + fallback from UA), optional safe query/body/cookie **context** (see `boogle.context`); authenticated user `id` / `uuid` / `email` / `name` when available
+- **Automatic user feedback (every error)** — `user_feedback` / `userFeedback` with `kind: automatic`, a unique `occurrence_id` per request, `captured_at`, and `technical` (IP, `User-Agent`, `client` with OS/browser, optional `context` from `boogle.context`); plus shallow `ip` / `user_agent` / `context` mirrors for older parsers. This is *not* the same as a human-typed message in the Boogle UI: that can remain a separate product feature on the server, while this package always sends the technical snapshot in parallel, once per `handle()` that is not skipped by your config
+- **User on the error** — `exception.user` when authenticated: `id` / `uuid` / `email` / `name`
 - **No-op when unconfigured** — if required `.env` values are missing, nothing is sent and `Boogle::isEnabled()` is `false` (useful to gate UI or to know reporting is off)
 - **Environment-aware** — report only in environments you allow (default: `production`)
-- **Noise control** — ignore specific exception classes (404s excluded by default) and **deduplicate** repeated identical errors for a configurable window using the cache store
+- **Noise control** — ignore specific exception classes (404s excluded by default) and **deduplicate** repeated identical errors for a configurable window using the cache store (set `sleep` to `0` if you need one HTTP post for every throw, e.g. to count each user)
 - **Key masking** — configurable blacklist for input/query/session/cookies (e.g. `password`, `token`)
 - **Safe by design** — reporting never throws back into your app; timeouts are bounded via Guzzle
 
@@ -118,7 +119,7 @@ public function register(): void
 2. **`string $fileType`** — label for the payload (default: `'php'`)
 3. **`array $customData`** — merged into the `exception` object; special keys:
    - **`client`** — merged into the user-feedback `client` object (e.g. `screen` from the browser, see below)
-   - **`user_feedback`** — [`array_replace_recursive`](https://www.php.net/array_replace_recursive) with the auto-generated user-feedback array (e.g. add a `note` without replacing the whole block)
+   - **`user_feedback`** — merged recursively on top of the **automatic** object (same keys as the payload below). Add fields the Boogle app should treat as manual or extra; avoid overwriting `technical` unless you know what you are doing
 
 ```php
 Boogle::handle($e, 'php', [
@@ -139,22 +140,31 @@ Boogle::handle($e, 'php', [
 
 ---
 
-## User feedback and HTTP payload
+## Automatic user feedback and HTTP payload
 
-Each report sends the same user-feedback object in **three** places for compatibility with different ingestion UIs and APIs:
+**Design:** each time Boogle **sends** a log (a successful call to `handle()` that is not limited by your environment rules or the deduplication `sleep` window), the same **automatic** object is included: one technical snapshot and an `occurrence_id` for this request, in addition to any separate feature where an end user types free-form feedback in your Boogle app.
 
-- Top-level: **`user_feedback`** (snake_case)
-- Top-level: **`userFeedback`** (camelCase, same data)
-- Nested: **`exception.user_feedback`**
+The object is sent in **three** places for different ingestion UIs:
 
-A typical `user_feedback` value includes:
+- Top-level: **`user_feedback`**
+- Top-level: **`userFeedback`**
+- Inside the exception: **`exception.user_feedback`**
 
-- `type` — e.g. `error_auto`
-- `source` — `boogle-laravel`
-- `ip`, `user_agent`, `client` (`browser`, `os`, plus your `client` merge)
-- `context` (optional) — controlled by `boogle.context` (query, input, session, headers, cookies)
+Shape (conceptual):
 
-Your Boogle **server** must persist and display whichever key your dashboard expects (root `userFeedback` / `user_feedback` and/or `exception.user_feedback`).
+| Field | Meaning |
+|-------|--------|
+| `kind` | `automatic` (manual stories from your product can use another `kind` or a sibling model) |
+| `type` | `error_auto` (legacy / filter) |
+| `source` | `boogle-laravel` |
+| `captured_at` | ISO-8601 when the report was built |
+| `occurrence_id` | New UUID for **this** request (one row per successful report; use it on the server to list “who hit the bug”) |
+| `technical` | `ip`, `user_agent`, `client` (browser, os, your `client` merge), optional `context` (query, input, … from `boogle.context`) |
+| `ip` / `user_agent` / `context` | Shallow copy of the same data for old parsers |
+
+Your Boogle **server** should read `user_feedback.technical` (or the flat mirrors) to show automatic, per-occurrence context in the issue UI, and can keep a separate **manual** feedback area for when a user actually submits a message, **or** map this object into the same view if you prefer one list.
+
+**Note:** with default `sleep > 0`, the **same** error fingerprint may not call the API again for N seconds, so you will not get one `occurrence_id` per user if many users hit the same bug in the same window. Set `sleep` to `0` in `config/boogle.php` to post on every throw (more traffic, full occurrence list).
 
 ---
 

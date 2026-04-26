@@ -3,8 +3,12 @@
 namespace Boogle;
 
 use GuzzleHttp\Client as HttpClient;
+use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Throwable;
 
 class Boogle
@@ -138,6 +142,11 @@ class Boogle
         ];
     }
 
+    /**
+     * Every reported exception includes an automatic "user feedback" object (kind=automatic)
+     * for this HTTP report. Boogle can store the manual "user message" type separately; merge
+     * extra keys with handle(..., ['user_feedback' => ...]).
+     */
     private function buildUserFeedback(?Request $request, array $clientOverride): array
     {
         $client = array_merge(
@@ -145,20 +154,41 @@ class Boogle
             $clientOverride
         );
 
-        $feedback = [
-            'type'   => 'error_auto',
-            'source' => 'boogle-laravel',
-            'ip'     => $request?->ip(),
+        $ctx = $this->getDebugContext($request);
+        $technical = [
+            'ip'         => $request?->ip(),
             'user_agent' => $request?->userAgent(),
-            'client' => $client,
+            'client'     => $client,
+        ];
+        if ($ctx !== []) {
+            $technical['context'] = $ctx;
+        }
+
+        $feedback = [
+            'kind'          => 'automatic',
+            'type'          => 'error_auto',
+            'source'        => 'boogle-laravel',
+            'captured_at'   => $this->nowIso8601(),
+            'occurrence_id' => (string) Str::uuid(),
+            'technical'     => $technical,
         ];
 
-        $ctx = $this->getDebugContext($request);
-        if ($ctx !== []) {
-            $feedback['context'] = $ctx;
+        $feedback['ip'] = $technical['ip'];
+        $feedback['user_agent'] = $technical['user_agent'];
+        if (isset($technical['context'])) {
+            $feedback['context'] = $technical['context'];
         }
 
         return $feedback;
+    }
+
+    private function nowIso8601(): string
+    {
+        if (function_exists('now')) {
+            return now()->toIso8601String();
+        }
+
+        return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DateTimeInterface::ATOM);
     }
 
     private function inferClientFromRequest(?Request $request): array
