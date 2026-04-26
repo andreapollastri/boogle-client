@@ -75,18 +75,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Automatic user feedback + context (boogle.context = debug payload below)
+    | HTTP snapshot (goes in exception.http)
     |--------------------------------------------------------------------------
-    | user_feedback in JSON: kind=automatic, occurrence_id, captured_at, technical{…}.
-    | Manual text feedback from a user in the Boogle app is separate. Merge with
-    | Boogle::handle($e, "php", ["user_feedback" => …]). "context" key below
-    | fills technical.context when non-empty. Use "client" in handle() for e.g. screen.
+    | Control what is included in the JSON. Apply mask via "blacklist" above.
+    | Merge extra keys: Boogle::handle($e, "php", ["http" => ["extra" => "value"]]).
     */
-    'context' => [
-        'include_input'   => true,
+    'http' => [
         'include_query'   => true,
+        'include_payload' => true,
+        'include_cookies' => true,
+        'cookie_values'   => true,
         'include_session' => false,
         'include_headers' => false,
-        'cookie_values'   => false, // if true, send cookie name/value (blacklist applied). Otherwise only cookie_names.
     ],
 ];
