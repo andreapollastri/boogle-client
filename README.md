@@ -1,7 +1,8 @@
 # Boogle Client
 
-[![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white)](https://www.php.net/)
+[![PHP](https://img.shields.io/badge/PHP-8.2%20|%208.3%20|%208.4%20|%208.5%20|%208.6-777BB4?logo=php&logoColor=white)](https://www.php.net/)
 [![Laravel](https://img.shields.io/badge/Laravel-10%20|%2011%20|%2012%20|%2013-FF2D20?logo=laravel&logoColor=white)](https://laravel.com/)
+[![Tests](https://github.com/andreapollastri/boogle-client/actions/workflows/tests.yml/badge.svg)](https://github.com/andreapollastri/boogle-client/actions/workflows/tests.yml)
 [![License](https://img.shields.io/badge/License-MIT-005f73)](LICENSE)
 [![Packagist](https://img.shields.io/packagist/v/andreapollastri/boogle-client.svg?label=Packagist)](https://packagist.org/packages/andreapollastri/boogle-client)
 
@@ -27,7 +28,7 @@ The package hooks into Laravel’s native reporting: environment and exception f
 
 ## Requirements
 
-- **PHP** 8.2+
+- **PHP** 8.2, 8.3, 8.4, 8.5, or 8.6
 - **Laravel** 10, 11, 12, or 13
 - **Guzzle** 7 (pulled in as a dependency)
 
